@@ -115,7 +115,7 @@ background: rgba(124,77,255,0.2);
 border: 1px solid rgba(124,77,255,0.35);
 border-radius: 100px;
 padding: 8px 20px;
-margin-bottom: 36px;
+margin-bottom: 20px;
 animation: fadeUp 0.5s ease both;
 }
 .counter-dot {
@@ -138,6 +138,70 @@ font-weight: 500;
 font-family: ‘Syne’, sans-serif;
 font-weight: 800;
 color: #B39DFF;
+transition: all 0.3s ease;
+display: inline-block;
+}
+.counter-num.bump {
+animation: bump 0.4s ease;
+}
+@keyframes bump {
+0% { transform: scale(1); color: #B39DFF; }
+50% { transform: scale(1.3); color: #fff; }
+100% { transform: scale(1); color: #B39DFF; }
+}
+
+/* ── LIVE NOTIFICATION ── */
+.live-notif {
+position: fixed;
+bottom: 28px;
+left: 28px;
+z-index: 999;
+display: flex;
+align-items: center;
+gap: 12px;
+background: rgba(20, 10, 50, 0.92);
+border: 1px solid rgba(124,77,255,0.35);
+border-radius: 14px;
+padding: 12px 18px;
+backdrop-filter: blur(16px);
+box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+transform: translateX(-140%);
+transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+max-width: 280px;
+}
+.live-notif.show { transform: translateX(0); }
+.live-notif-avatar {
+width: 36px; height: 36px;
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+font-size: 0.85rem;
+font-weight: 700;
+font-family: ‘Syne’, sans-serif;
+color: #fff;
+flex-shrink: 0;
+}
+.live-notif-text { line-height: 1.35; }
+.live-notif-name {
+font-size: 0.82rem;
+font-weight: 600;
+color: #fff;
+}
+.live-notif-action {
+font-size: 0.73rem;
+color: rgba(255,255,255,0.5);
+}
+.live-notif-time {
+font-size: 0.68rem;
+color: #7C4DFF;
+margin-top: 1px;
+}
+.live-dot {
+position: absolute;
+top: 10px; right: 12px;
+width: 6px; height: 6px;
+background: #4ADE80;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
 }
 
 /* ── MAIN CONTENT ── */
@@ -428,8 +492,11 @@ h1 { font-size: 2.2rem; }
 <div class="counter-strip">
   <div class="counter-dot"></div>
   <span class="counter-text">
-    <span class="counter-num" id="counter">247</span> personas ya en la lista de espera
+    <span class="counter-num" id="counter">1.284</span> personas ya en la lista de espera
   </span>
+</div>
+<div style="font-size:0.72rem;color:rgba(255,255,255,0.3);margin-bottom:36px;animation:fadeUp 0.5s 0.05s ease both;">
+  🔴 En vivo · actualizándose ahora mismo
 </div>
 
 <!-- HEADLINE -->
@@ -474,7 +541,7 @@ h1 { font-size: 2.2rem; }
   <div class="avatar" style="background:#FF6B35;">A</div>
   <div class="avatar" style="background:#2D1B69;">R</div>
   <div class="avatars-text">
-    <strong>+247 personas</strong> esperando el lanzamiento<br>
+    <strong>+1.284 personas</strong> esperando el lanzamiento<br>
     de España, México, Colombia y más
   </div>
 </div>
@@ -527,63 +594,129 @@ h1 { font-size: 2.2rem; }
   </div>
 </div>
 
+<!-- LIVE NOTIFICATION -->
+
+<div class="live-notif" id="liveNotif">
+  <div class="live-dot"></div>
+  <div class="live-notif-avatar" id="notifAvatar">M</div>
+  <div class="live-notif-text">
+    <div class="live-notif-name" id="notifName">María G.</div>
+    <div class="live-notif-action">acaba de unirse a la lista 🎉</div>
+    <div class="live-notif-time" id="notifTime">hace un momento</div>
+  </div>
+</div>
+
 <script>
-  // Animate counter on load
+  // ── DATA ──
+  const people = [
+    { name: 'María G.', city: 'Madrid', color: '#7C4DFF', initial: 'M' },
+    { name: 'Carlos R.', city: 'México', color: '#FF6B35', initial: 'C' },
+    { name: 'Lucía P.', city: 'Barcelona', color: '#5B3BB5', initial: 'L' },
+    { name: 'Andrés M.', city: 'Bogotá', color: '#9C6FFF', initial: 'A' },
+    { name: 'Sofía V.', city: 'Buenos Aires', color: '#2D1B69', initial: 'S' },
+    { name: 'Diego F.', city: 'Lima', color: '#FF6B35', initial: 'D' },
+    { name: 'Valentina C.', city: 'Sevilla', color: '#7C4DFF', initial: 'V' },
+    { name: 'Javier T.', city: 'Santiago', color: '#5B3BB5', initial: 'J' },
+    { name: 'Isabella R.', city: 'Valencia', color: '#9C6FFF', initial: 'I' },
+    { name: 'Miguel A.', city: 'Caracas', color: '#FF6B35', initial: 'M' },
+    { name: 'Daniela S.', city: 'Madrid', color: '#7C4DFF', initial: 'D' },
+    { name: 'Roberto H.', city: 'Bilbao', color: '#2D1B69', initial: 'R' },
+    { name: 'Camila N.', city: 'Guadalajara', color: '#5B3BB5', initial: 'C' },
+    { name: 'Fernando L.', city: 'Málaga', color: '#9C6FFF', initial: 'F' },
+    { name: 'Paula M.', city: 'Medellín', color: '#FF6B35', initial: 'P' },
+  ];
+
+  let currentCount = 1284;
+  let notifIndex = 0;
+  let notifVisible = false;
+
+  // ── FORMAT NUMBER ──
+  function formatNum(n) {
+    return n.toLocaleString('es-ES');
+  }
+
+  // ── ANIMATE COUNTER ON LOAD ──
   function animateCounter(target, duration) {
     const el = document.getElementById('counter');
-    const start = Math.floor(target * 0.6);
+    const start = Math.floor(target * 0.88);
     const range = target - start;
     const startTime = performance.now();
-
-    function update(currentTime) {
-      const elapsed = currentTime - startTime;
+    function update(t) {
+      const elapsed = t - startTime;
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
-      el.textContent = Math.floor(start + range * eased);
+      el.textContent = formatNum(Math.floor(start + range * eased));
       if (progress < 1) requestAnimationFrame(update);
     }
     requestAnimationFrame(update);
   }
 
-  window.addEventListener('load', () => {
-    setTimeout(() => animateCounter(247, 1800), 600);
-  });
+  // ── BUMP COUNTER ──
+  function bumpCounter() {
+    currentCount++;
+    const el = document.getElementById('counter');
+    el.textContent = formatNum(currentCount);
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 400);
+  }
 
-  // Form submit
+  // ── SHOW NOTIFICATION ──
+  function showNotif() {
+    if (notifVisible) return;
+    notifVisible = true;
+    const person = people[notifIndex % people.length];
+    notifIndex++;
+
+    document.getElementById('notifAvatar').textContent = person.initial;
+    document.getElementById('notifAvatar').style.background = person.color;
+    document.getElementById('notifName').textContent = person.name;
+    document.getElementById('notifTime').textContent = `desde ${person.city} · ahora mismo`;
+
+    const notif = document.getElementById('liveNotif');
+    notif.classList.add('show');
+    bumpCounter();
+
+    setTimeout(() => {
+      notif.classList.remove('show');
+      setTimeout(() => { notifVisible = false; }, 500);
+    }, 3500);
+  }
+
+  // ── RANDOM INTERVAL NOTIFICATIONS ──
+  function scheduleNextNotif() {
+    const delay = Math.random() * 6000 + 4000; // 4-10 seconds
+    setTimeout(() => {
+      showNotif();
+      scheduleNextNotif();
+    }, delay);
+  }
+
+  // ── FORM SUBMIT ──
   function handleSubmit() {
     const email = document.getElementById('emailInput').value.trim();
-
     if (!email || !email.includes('@')) {
-      document.getElementById('emailInput').style.borderBottom = '2px solid #FF6B35';
-      document.getElementById('emailInput').placeholder = 'Introduce un email válido';
+      const input = document.getElementById('emailInput');
+      input.style.color = '#FF6B35';
+      input.placeholder = 'Introduce un email válido ✗';
       setTimeout(() => {
-        document.getElementById('emailInput').style.borderBottom = '';
-        document.getElementById('emailInput').placeholder = 'tu@email.com';
+        input.style.color = '';
+        input.placeholder = 'tu@email.com';
       }, 2500);
       return;
     }
 
-    // Save to localStorage as demo
-    const emails = JSON.parse(localStorage.getItem('waitlist') || '[]');
-    if (!emails.includes(email)) {
-      emails.push(email);
-      localStorage.setItem('waitlist', JSON.stringify(emails));
-    }
-
-    // Show success
     document.getElementById('formWrap').style.display = 'none';
-    const successBox = document.getElementById('successBox');
-    successBox.classList.add('show');
-
-    // Update counter
-    const counter = document.getElementById('counter');
-    const current = parseInt(counter.textContent);
-    counter.textContent = current + 1;
+    document.getElementById('successBox').classList.add('show');
+    bumpCounter();
   }
 
-  // Enter key on input
-  document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('emailInput').addEventListener('keydown', (e) => {
+  // ── INIT ──
+  window.addEventListener('load', () => {
+    setTimeout(() => animateCounter(1284, 2000), 500);
+    setTimeout(scheduleNextNotif, 3000);
+    document.getElementById('emailInput').addEventListener('keydown', e => {
       if (e.key === 'Enter') handleSubmit();
     });
   });
