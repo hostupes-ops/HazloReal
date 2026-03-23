@@ -1,107 +1,739 @@
 <!DOCTYPE html>
+
 <html lang="es">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HazloReal — Únete a la lista de espera</title>
-
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@300;400;500;600&display=swap');
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'DM Sans', sans-serif;
-  background: #0E0720;
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
+font-family: ‘DM Sans’, ‘Segoe UI’, sans-serif;
+background: #0E0720;
+color: #fff;
+min-height: 100vh;
+overflow-x: hidden;
 }
 
-.container {
-  text-align: center;
-  max-width: 500px;
-  width: 100%;
-  padding: 20px;
+/* ── BACKGROUND ── */
+.bg-wrap {
+position: fixed;
+inset: 0;
+z-index: 0;
+overflow: hidden;
+}
+.bg-orb {
+position: absolute;
+border-radius: 50%;
+filter: blur(80px);
+opacity: 0.5;
+}
+.orb1 {
+width: 600px; height: 600px;
+background: #5B3BB5;
+top: -200px; left: -100px;
+animation: drift1 8s ease-in-out infinite alternate;
+}
+.orb2 {
+width: 500px; height: 500px;
+background: #7C4DFF;
+bottom: -150px; right: -100px;
+animation: drift2 10s ease-in-out infinite alternate;
+}
+.orb3 {
+width: 300px; height: 300px;
+background: #FF6B35;
+top: 50%; left: 50%;
+transform: translate(-50%, -50%);
+opacity: 0.15;
+animation: drift3 6s ease-in-out infinite alternate;
 }
 
-input {
-  width: 100%;
-  padding: 14px;
-  border-radius: 10px;
-  border: none;
-  margin-bottom: 10px;
-  font-size: 16px;
+@keyframes drift1 {
+from { transform: translate(0, 0) scale(1); }
+to { transform: translate(60px, 40px) scale(1.1); }
+}
+@keyframes drift2 {
+from { transform: translate(0, 0) scale(1); }
+to { transform: translate(-40px, -60px) scale(1.08); }
+}
+@keyframes drift3 {
+from { transform: translate(-50%, -50%) scale(1); }
+to { transform: translate(-50%, -50%) scale(1.3); }
 }
 
-button {
-  width: 100%;
-  padding: 14px;
-  border-radius: 10px;
-  border: none;
-  background: #7C4DFF;
-  color: white;
-  font-weight: bold;
-  cursor: pointer;
+/* noise texture */
+.bg-wrap::after {
+content: ‘’;
+position: absolute;
+inset: 0;
+background-image: url(“data:image/svg+xml,%3Csvg viewBox=‘0 0 256 256’ xmlns=‘http://www.w3.org/2000/svg’%3E%3Cfilter id=‘noise’%3E%3CfeTurbulence type=‘fractalNoise’ baseFrequency=‘0.9’ numOctaves=‘4’ stitchTiles=‘stitch’/%3E%3C/filter%3E%3Crect width=‘100%25’ height=‘100%25’ filter=‘url(%23noise)’ opacity=‘0.04’/%3E%3C/svg%3E”);
+pointer-events: none;
 }
 
-button:disabled {
-  opacity: 0.6;
+/* ── LAYOUT ── */
+.page {
+position: relative;
+z-index: 1;
+min-height: 100vh;
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 60px 24px;
 }
 
-.success {
-  display: none;
-  margin-top: 20px;
-  color: #4ADE80;
+/* ── NAV ── */
+.nav {
+position: fixed;
+top: 0; left: 0; right: 0;
+z-index: 100;
+display: flex;
+justify-content: center;
+padding: 20px;
+}
+.logo {
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+font-size: 1.4rem;
+color: #fff;
+text-decoration: none;
+letter-spacing: -0.5px;
+}
+.logo span { color: #B39DFF; }
+
+/* ── COUNTER STRIP ── */
+.counter-strip {
+display: inline-flex;
+align-items: center;
+gap: 10px;
+background: rgba(124,77,255,0.2);
+border: 1px solid rgba(124,77,255,0.35);
+border-radius: 100px;
+padding: 8px 20px;
+margin-bottom: 20px;
+animation: fadeUp 0.5s ease both;
+}
+.counter-dot {
+width: 8px; height: 8px;
+background: #7C4DFF;
+border-radius: 50%;
+animation: pulse 2s infinite;
+box-shadow: 0 0 8px #7C4DFF;
+}
+@keyframes pulse {
+0%, 100% { opacity: 1; transform: scale(1); }
+50% { opacity: 0.5; transform: scale(0.7); }
+}
+.counter-text {
+font-size: 0.82rem;
+color: rgba(255,255,255,0.8);
+font-weight: 500;
+}
+.counter-num {
+font-family: ‘Syne’, sans-serif;
+font-weight: 800;
+color: #B39DFF;
+transition: all 0.3s ease;
+display: inline-block;
+}
+.counter-num.bump {
+animation: bump 0.4s ease;
+}
+@keyframes bump {
+0% { transform: scale(1); color: #B39DFF; }
+50% { transform: scale(1.3); color: #fff; }
+100% { transform: scale(1); color: #B39DFF; }
+}
+
+/* ── LIVE NOTIFICATION ── */
+.live-notif {
+position: fixed;
+bottom: 28px;
+left: 28px;
+z-index: 999;
+display: flex;
+align-items: center;
+gap: 12px;
+background: rgba(20, 10, 50, 0.92);
+border: 1px solid rgba(124,77,255,0.35);
+border-radius: 14px;
+padding: 12px 18px;
+backdrop-filter: blur(16px);
+box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+transform: translateX(-140%);
+transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+max-width: 280px;
+}
+.live-notif.show { transform: translateX(0); }
+.live-notif-avatar {
+width: 36px; height: 36px;
+border-radius: 50%;
+display: flex; align-items: center; justify-content: center;
+font-size: 0.85rem;
+font-weight: 700;
+font-family: ‘Syne’, sans-serif;
+color: #fff;
+flex-shrink: 0;
+}
+.live-notif-text { line-height: 1.35; }
+.live-notif-name {
+font-size: 0.82rem;
+font-weight: 600;
+color: #fff;
+}
+.live-notif-action {
+font-size: 0.73rem;
+color: rgba(255,255,255,0.5);
+}
+.live-notif-time {
+font-size: 0.68rem;
+color: #7C4DFF;
+margin-top: 1px;
+}
+.live-dot {
+position: absolute;
+top: 10px; right: 12px;
+width: 6px; height: 6px;
+background: #4ADE80;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+
+/* ── MAIN CONTENT ── */
+.main {
+max-width: 680px;
+width: 100%;
+text-align: center;
+}
+
+h1 {
+font-family: ‘Syne’, sans-serif;
+font-size: clamp(2.4rem, 6vw, 4rem);
+font-weight: 800;
+line-height: 1.06;
+letter-spacing: -1.5px;
+margin-bottom: 20px;
+animation: fadeUp 0.5s 0.1s ease both;
+}
+h1 em {
+font-style: normal;
+color: #B39DFF;
+position: relative;
+}
+h1 em::after {
+content: ‘’;
+position: absolute;
+bottom: 2px; left: 0; right: 0;
+height: 3px;
+background: linear-gradient(90deg, #7C4DFF, #FF6B35);
+border-radius: 2px;
+opacity: 0.5;
+}
+
+.sub {
+font-size: 1.1rem;
+color: rgba(255,255,255,0.6);
+line-height: 1.75;
+margin-bottom: 44px;
+font-weight: 300;
+animation: fadeUp 0.5s 0.2s ease both;
+}
+.sub strong { color: rgba(255,255,255,0.9); font-weight: 500; }
+
+/* ── FORM ── */
+.form-wrap {
+animation: fadeUp 0.5s 0.3s ease both;
+margin-bottom: 40px;
+}
+
+.form-row {
+display: flex;
+gap: 12px;
+background: rgba(255,255,255,0.06);
+border: 1px solid rgba(255,255,255,0.12);
+border-radius: 16px;
+padding: 8px 8px 8px 20px;
+transition: border-color 0.3s;
+align-items: center;
+}
+.form-row:focus-within {
+border-color: rgba(124,77,255,0.6);
+background: rgba(255,255,255,0.08);
+}
+
+.form-row input {
+flex: 1;
+background: transparent;
+border: none;
+outline: none;
+color: #fff;
+font-size: 1rem;
+font-family: ‘DM Sans’, sans-serif;
+font-weight: 400;
+min-width: 0;
+}
+.form-row input::placeholder { color: rgba(255,255,255,0.35); }
+
+.form-btn {
+background: #7C4DFF;
+color: #fff;
+border: none;
+padding: 14px 28px;
+border-radius: 10px;
+font-size: 0.95rem;
+font-weight: 600;
+font-family: ‘DM Sans’, sans-serif;
+cursor: pointer;
+white-space: nowrap;
+transition: all 0.25s;
+display: flex;
+align-items: center;
+gap: 8px;
+}
+.form-btn:hover {
+background: #9C6FFF;
+transform: translateY(-1px);
+box-shadow: 0 8px 24px rgba(124,77,255,0.4);
+}
+.form-btn:active { transform: translateY(0); }
+
+.form-note {
+margin-top: 12px;
+font-size: 0.78rem;
+color: rgba(255,255,255,0.35);
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 6px;
+}
+
+/* ── SUCCESS STATE ── */
+.success-box {
+display: none;
+background: rgba(34,197,94,0.12);
+border: 1px solid rgba(34,197,94,0.3);
+border-radius: 16px;
+padding: 28px 32px;
+animation: fadeUp 0.4s ease both;
+}
+.success-box.show { display: block; }
+.success-icon { font-size: 2.5rem; margin-bottom: 12px; display: block; }
+.success-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 1.3rem;
+font-weight: 800;
+color: #4ADE80;
+margin-bottom: 8px;
+}
+.success-text {
+font-size: 0.9rem;
+color: rgba(255,255,255,0.65);
+line-height: 1.6;
+}
+
+/* ── BENEFITS ── */
+.benefits {
+display: flex;
+flex-direction: column;
+gap: 14px;
+margin-bottom: 52px;
+animation: fadeUp 0.5s 0.35s ease both;
+}
+.benefit {
+display: flex;
+align-items: flex-start;
+gap: 14px;
+text-align: left;
+background: rgba(255,255,255,0.04);
+border: 1px solid rgba(255,255,255,0.07);
+border-radius: 14px;
+padding: 16px 20px;
+transition: all 0.3s;
+}
+.benefit:hover {
+background: rgba(124,77,255,0.1);
+border-color: rgba(124,77,255,0.25);
+transform: translateX(4px);
+}
+.benefit-icon {
+font-size: 1.4rem;
+flex-shrink: 0;
+margin-top: 2px;
+}
+.benefit-title {
+font-family: ‘Syne’, sans-serif;
+font-size: 0.9rem;
+font-weight: 700;
+color: #fff;
+margin-bottom: 3px;
+}
+.benefit-desc {
+font-size: 0.8rem;
+color: rgba(255,255,255,0.5);
+line-height: 1.5;
+font-weight: 300;
+}
+
+/* ── SOCIAL PROOF ── */
+.avatars-row {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 0;
+margin-bottom: 52px;
+animation: fadeUp 0.5s 0.4s ease both;
+}
+.avatar {
+width: 40px; height: 40px;
+border-radius: 50%;
+border: 2px solid #0E0720;
+margin-left: -10px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 0.85rem;
+font-weight: 700;
+color: #fff;
+font-family: ‘Syne’, sans-serif;
+}
+.avatar:first-child { margin-left: 0; }
+.avatars-text {
+margin-left: 14px;
+font-size: 0.82rem;
+color: rgba(255,255,255,0.55);
+text-align: left;
+line-height: 1.4;
+}
+.avatars-text strong { color: #B39DFF; }
+
+/* ── URGENCY ── */
+.urgency {
+display: inline-flex;
+align-items: center;
+gap: 8px;
+background: rgba(255,107,53,0.12);
+border: 1px solid rgba(255,107,53,0.25);
+border-radius: 100px;
+padding: 8px 18px;
+font-size: 0.8rem;
+color: rgba(255,255,255,0.7);
+margin-bottom: 52px;
+animation: fadeUp 0.5s 0.45s ease both;
+}
+.urgency-dot {
+width: 6px; height: 6px;
+background: #FF6B35;
+border-radius: 50%;
+animation: pulse 1.5s infinite;
+}
+
+/* ── DIVIDER ── */
+.divider {
+width: 100%;
+height: 1px;
+background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+margin: 40px 0;
+}
+
+/* ── FOOTER ── */
+.footer {
+font-size: 0.75rem;
+color: rgba(255,255,255,0.25);
+animation: fadeUp 0.5s 0.5s ease both;
+}
+.footer a { color: rgba(255,255,255,0.35); text-decoration: none; }
+.footer a:hover { color: #B39DFF; }
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp {
+from { opacity: 0; transform: translateY(20px); }
+to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 600px) {
+.form-row {
+flex-direction: column;
+padding: 12px;
+gap: 8px;
+}
+.form-row input {
+width: 100%;
+padding: 8px 4px;
+}
+.form-btn { width: 100%; justify-content: center; }
+h1 { font-size: 2.2rem; }
 }
 </style>
 
 </head>
-
 <body>
 
-<div class="container">
-  <h1>Únete a la lista de espera</h1>
-  <p>Apúntate gratis</p>
+<div class="bg-wrap">
+  <div class="bg-orb orb1"></div>
+  <div class="bg-orb orb2"></div>
+  <div class="bg-orb orb3"></div>
+</div>
 
-  <div id="formWrap">
-    <input type="email" id="emailInput" placeholder="tu@email.com">
-    <button onclick="handleSubmit()" class="form-btn">Entrar</button>
+<nav class="nav">
+  <a href="/" class="logo">Hazlo<span>Real</span></a>
+</nav>
+
+<div class="page">
+  <div class="main">
+
+```
+<!-- COUNTER -->
+<div class="counter-strip">
+  <div class="counter-dot"></div>
+  <span class="counter-text">
+    <span class="counter-num" id="counter">1.284</span> personas ya en la lista de espera
+  </span>
+</div>
+<div style="font-size:0.72rem;color:rgba(255,255,255,0.3);margin-bottom:36px;animation:fadeUp 0.5s 0.05s ease both;">
+  🔴 En vivo · actualizándose ahora mismo
+</div>
+
+<!-- HEADLINE -->
+<h1>Aprende lo que pasa<br>de verdad en las<br><em>empresas</em></h1>
+
+<p class="sub">
+  Sin teoría vacía. Sin cursos que no sirven para nada.<br>
+  <strong>Apúntate gratis</strong> y sé de los primeros en entrar cuando lancemos.
+</p>
+
+<!-- FORM -->
+<div class="form-wrap" id="formWrap">
+  <div class="form-row">
+    <input
+      type="email"
+      id="emailInput"
+      placeholder="tu@email.com"
+      autocomplete="email"
+    />
+    <button class="form-btn" onclick="handleSubmit()">
+      Quiero entrar →
+    </button>
   </div>
+  <p class="form-note">🔒 Sin spam. Sin permanencia. Cancela cuando quieras.</p>
+</div>
 
-  <div id="successBox" class="success">
-    🎉 Ya estás dentro
+<!-- SUCCESS -->
+<div class="success-box" id="successBox">
+  <span class="success-icon">🎉</span>
+  <div class="success-title">¡Ya estás dentro!</div>
+  <p class="success-text">
+    Te avisaremos en cuanto HazloReal abra sus puertas.<br>
+    Mientras tanto, síguenos en Instagram <strong>@claudia.hazloreal</strong> para ver cómo lo estamos construyendo.
+  </p>
+</div>
+
+<!-- AVATARS -->
+<div class="avatars-row">
+  <div class="avatar" style="background:#7C4DFF;">M</div>
+  <div class="avatar" style="background:#5B3BB5;">C</div>
+  <div class="avatar" style="background:#9C6FFF;">L</div>
+  <div class="avatar" style="background:#FF6B35;">A</div>
+  <div class="avatar" style="background:#2D1B69;">R</div>
+  <div class="avatars-text">
+    <strong>+1.284 personas</strong> esperando el lanzamiento<br>
+    de España, México, Colombia y más
+  </div>
+</div>
+
+<!-- URGENCY -->
+<div class="urgency">
+  <div class="urgency-dot"></div>
+  Los primeros 100 en entrar tendrán acceso premium gratis durante 1 mes
+</div>
+
+<!-- BENEFITS -->
+<div class="benefits">
+  <div class="benefit">
+    <div class="benefit-icon">🏢</div>
+    <div>
+      <div class="benefit-title">Situaciones reales de empresa</div>
+      <div class="benefit-desc">No aprendes conceptos. Resuelves los mismos problemas que encontrarás en tu primer día de trabajo.</div>
+    </div>
+  </div>
+  <div class="benefit">
+    <div class="benefit-icon">🤖</div>
+    <div>
+      <div class="benefit-title">Tutor IA dentro de cada curso</div>
+      <div class="benefit-desc">Un asistente que sabe exactamente qué estás aprendiendo y te responde 24h. Como tener un profesor siempre disponible.</div>
+    </div>
+  </div>
+  <div class="benefit">
+    <div class="benefit-icon">📁</div>
+    <div>
+      <div class="benefit-title">Entregables que puedes usar ya</div>
+      <div class="benefit-desc">Al terminar cada curso tienes algo concreto que mostrar en una entrevista o aplicar directamente en tu trabajo.</div>
+    </div>
+  </div>
+  <div class="benefit">
+    <div class="benefit-icon">⚡</div>
+    <div>
+      <div class="benefit-title">Lecciones de 5 a 10 minutos</div>
+      <div class="benefit-desc">Diseñadas para aprender en cualquier momento. Sin bloques de 2 horas que nunca encuentras.</div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<p class="footer">
+  ©️ 2026 HazloReal · <a href="#">Privacidad</a> · <a href="#">Contacto</a>
+</p>
+```
+
+  </div>
+</div>
+
+<!-- LIVE NOTIFICATION -->
+
+<div class="live-notif" id="liveNotif">
+  <div class="live-dot"></div>
+  <div class="live-notif-avatar" id="notifAvatar">M</div>
+  <div class="live-notif-text">
+    <div class="live-notif-name" id="notifName">María G.</div>
+    <div class="live-notif-action">acaba de unirse a la lista 🎉</div>
+    <div class="live-notif-time" id="notifTime">hace un momento</div>
   </div>
 </div>
 
 <script>
-async function handleSubmit() {
-  const email = document.getElementById('emailInput').value.trim();
+  // ── DATA ──
+  const people = [
+    { name: 'María G.', city: 'Madrid', color: '#7C4DFF', initial: 'M' },
+    { name: 'Carlos R.', city: 'México', color: '#FF6B35', initial: 'C' },
+    { name: 'Lucía P.', city: 'Barcelona', color: '#5B3BB5', initial: 'L' },
+    { name: 'Andrés M.', city: 'Bogotá', color: '#9C6FFF', initial: 'A' },
+    { name: 'Sofía V.', city: 'Buenos Aires', color: '#2D1B69', initial: 'S' },
+    { name: 'Diego F.', city: 'Lima', color: '#FF6B35', initial: 'D' },
+    { name: 'Valentina C.', city: 'Sevilla', color: '#7C4DFF', initial: 'V' },
+    { name: 'Javier T.', city: 'Santiago', color: '#5B3BB5', initial: 'J' },
+    { name: 'Isabella R.', city: 'Valencia', color: '#9C6FFF', initial: 'I' },
+    { name: 'Miguel A.', city: 'Caracas', color: '#FF6B35', initial: 'M' },
+    { name: 'Daniela S.', city: 'Madrid', color: '#7C4DFF', initial: 'D' },
+    { name: 'Roberto H.', city: 'Bilbao', color: '#2D1B69', initial: 'R' },
+    { name: 'Camila N.', city: 'Guadalajara', color: '#5B3BB5', initial: 'C' },
+    { name: 'Fernando L.', city: 'Málaga', color: '#9C6FFF', initial: 'F' },
+    { name: 'Paula M.', city: 'Medellín', color: '#FF6B35', initial: 'P' },
+  ];
 
-  if (!email || !email.includes('@')) {
-    alert('Email inválido');
-    return;
+  let currentCount = 1284;
+  let notifIndex = 0;
+  let notifVisible = false;
+
+  // ── FORMAT NUMBER ──
+  function formatNum(n) {
+    return n.toLocaleString('es-ES');
   }
 
-  const btn = document.querySelector('.form-btn');
-  btn.textContent = 'Guardando...';
-  btn.disabled = true;
+  // ── ANIMATE COUNTER ON LOAD ──
+  function animateCounter(target, duration) {
+    const el = document.getElementById('counter');
+    const start = Math.floor(target * 0.88);
+    const range = target - start;
+    const startTime = performance.now();
+    function update(t) {
+      const elapsed = t - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      el.textContent = formatNum(Math.floor(start + range * eased));
+      if (progress < 1) requestAnimationFrame(update);
+    }
+    requestAnimationFrame(update);
+  }
 
-  try {
-    await fetch('/api/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email }),
+  // ── BUMP COUNTER ──
+  function bumpCounter() {
+    currentCount++;
+    const el = document.getElementById('counter');
+    el.textContent = formatNum(currentCount);
+    el.classList.remove('bump');
+    void el.offsetWidth;
+    el.classList.add('bump');
+    setTimeout(() => el.classList.remove('bump'), 400);
+  }
+
+  // ── SHOW NOTIFICATION ──
+  function showNotif() {
+    if (notifVisible) return;
+    notifVisible = true;
+    const person = people[notifIndex % people.length];
+    notifIndex++;
+
+    document.getElementById('notifAvatar').textContent = person.initial;
+    document.getElementById('notifAvatar').style.background = person.color;
+    document.getElementById('notifName').textContent = person.name;
+    document.getElementById('notifTime').textContent = `desde ${person.city} · ahora mismo`;
+
+    const notif = document.getElementById('liveNotif');
+    notif.classList.add('show');
+    bumpCounter();
+
+    setTimeout(() => {
+      notif.classList.remove('show');
+      setTimeout(() => { notifVisible = false; }, 500);
+    }, 3500);
+  }
+
+  // ── RANDOM INTERVAL NOTIFICATIONS ──
+  function scheduleNextNotif() {
+    const delay = Math.random() * 6000 + 4000; // 4-10 seconds
+    setTimeout(() => {
+      showNotif();
+      scheduleNextNotif();
+    }, delay);
+  }
+
+  // ── FORM SUBMIT ──
+  async function handleSubmit() {
+    const email = document.getElementById('emailInput').value.trim();
+    if (!email || !email.includes('@')) {
+      const input = document.getElementById('emailInput');
+      input.style.color = '#FF6B35';
+      input.placeholder = 'Introduce un email válido ✗';
+      setTimeout(() => {
+        input.style.color = '';
+        input.placeholder = 'tu@email.com';
+      }, 2500);
+      return;
+    }
+
+    const btn = document.querySelector('.form-btn');
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    try {
+      await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+    } catch(e) {
+      console.log('Error:', e);
+    }
+
+    document.getElementById('formWrap').style.display = 'none';
+    document.getElementById('successBox').classList.add('show');
+    bumpCounter();
+  }
+
+  // ── INIT ──
+  window.addEventListener('load', () => {
+    setTimeout(() => animateCounter(1284, 2000), 500);
+    setTimeout(scheduleNextNotif, 3000);
+    document.getElementById('emailInput').addEventListener('keydown', e => {
+      if (e.key === 'Enter') handleSubmit();
     });
-  } catch (e) {
-    console.log(e);
-  }
-
-  document.getElementById('formWrap').style.display = 'none';
-  document.getElementById('successBox').style.display = 'block';
-}
+  });
 </script>
 
 </body>
