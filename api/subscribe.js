@@ -9,7 +9,7 @@ export default async function handler(req, res) {
     },
     body: JSON.stringify({
       email: email,
-      listIds: [3], // 👈 CAMBIA 3 POR TU ID REAL
+      listIds: [5], // 👈 CAMBIA 3 POR TU ID REAL
       updateEnabled: true,
     }),
   });
