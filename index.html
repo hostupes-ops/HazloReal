@@ -694,7 +694,7 @@ h1 { font-size: 2.2rem; }
   }
 
   // ── FORM SUBMIT ──
-  function handleSubmit() {
+  async function handleSubmit() {
     const email = document.getElementById('emailInput').value.trim();
     if (!email || !email.includes('@')) {
       const input = document.getElementById('emailInput');
@@ -705,6 +705,29 @@ h1 { font-size: 2.2rem; }
         input.placeholder = 'tu@email.com';
       }, 2500);
       return;
+    }
+
+    // Disable button while sending
+    const btn = document.querySelector('.form-btn');
+    btn.textContent = 'Guardando...';
+    btn.disabled = true;
+
+    try {
+      await fetch('https://api.brevo.com/v3/contacts', {
+        method: 'POST',
+        headers: {
+          'accept': 'application/json',
+          'content-type': 'application/json',
+          'api-key': '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'
+        },
+        body: JSON.stringify({
+          email: email,
+          listIds: [2],
+          updateEnabled: true
+        })
+      });
+    } catch(e) {
+      console.log('Brevo error:', e);
     }
 
     document.getElementById('formWrap').style.display = 'none';
